@@ -15,7 +15,7 @@ $uname_m = if ($system_info -match "x64") {
     "arm64"
 } else {
     Write-Host "不支持的系统架构"
-    exit 1
+    [Environment]::Exit(1)
 }
 
 $FILENAME = "tinymist-$uname-$uname_m.vsix"
@@ -35,14 +35,14 @@ try {
     Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile $ZIPFILE -UseBasicParsing -ErrorAction Stop
 } catch {
     Write-Host "File download failed: $DOWNLOAD_URL"
-    exit 1
+    [Environment]::Exit(1)
 }
 
 try {
     Expand-Archive -Path $ZIPFILE -DestinationPath $DOWNLOAD_DIR -Force
 } catch {
     Write-Host "Failed to unzip file: $ZIPFILE"
-    exit 1
+    [Environment]::Exit(1)
 }
 
 Write-Host "File downloaded and unzipped to $(Join-Path $DOWNLOAD_DIR $FILENAME)"
