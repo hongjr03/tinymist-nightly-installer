@@ -3,7 +3,12 @@
 $DOWNLOAD_DIR = $env:TEMP
 
 $uname = "win32"
-$system_info = systeminfo | Select-String -Pattern "System Type" -Quiet
+# "System Type" or "系统类型"
+$system_info = systeminfo | Select-String "System Type" | ForEach-Object { $_.Line }
+$system_info_chinese = systeminfo | Select-String "系统类型" | ForEach-Object { $_.Line }
+if ($system_info -eq $null) {
+    $system_info = $system_info_chinese
+}
 $uname_m = if ($system_info -match "x64") {
     "x64"
 } elseif ($system_info -match "ARM64") {
