@@ -3,7 +3,7 @@
 $DOWNLOAD_DIR = $env:TEMP
 
 $uname = "win32"
-# "System Type" or "绯荤粺绫诲瀷"
+# "System Type" or "系统类型"
 $system_info = systeminfo | Select-String "System Type" | ForEach-Object { $_.Line }
 
 $uname_m = if ($system_info -match "x64") {
@@ -11,7 +11,7 @@ $uname_m = if ($system_info -match "x64") {
 } elseif ($system_info -match "ARM64") {
     "arm64"
 } else {
-    Write-Host "涓嶆敮鎸佺殑绯荤粺鏋舵瀯"
+    Write-Host "Unsupported system type: $system_info"
     [Environment]::Exit(1)
 }
 
