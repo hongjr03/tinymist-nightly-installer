@@ -1,9 +1,11 @@
 #!powershell
 
+# change code page to 65001; utf-8
+chcp 65001
+
 $DOWNLOAD_DIR = $env:TEMP
 
 $uname = "win32"
-# "System Type" or "系统类型"
 $system_info = systeminfo | Select-String "System Type" | ForEach-Object { $_.Line }
 
 $uname_m = if ($system_info -match "x64") {
