@@ -1,12 +1,12 @@
 # tinymist-(nightly)-installer
 
-English | [简体中文](README.zh-CN.md)
+[English](README.md) | 简体中文
 
-This repository is used to install the nightly version of tinymist, downloading the latest build from [tinymist::ci](https://github.com/Myriad-Dreamin/tinymist/actions/workflows/release-vscode.yml). It can also be used to install the latest stable release.
+本仓库用于安装 nightly 版本的 tinymist，下载 [tinymist::ci](https://github.com/Myriad-Dreamin/tinymist/actions/workflows/release-vscode.yml) 构建的最新版本。也可以用来安装最新的 stable 发行版。
 
-## Installation
+## 安装
 
-Copy the corresponding command to the terminal and run it.
+复制对应的命令到终端中运行即可。
 
 ### Nightly
 
@@ -36,6 +36,6 @@ Copy the corresponding command to the terminal and run it.
     iwr https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/download/run.ps1 -UseBasicParsing | iex -ArgumentList '--stable'
     ```
 
-## Notes
+## 注意事项
 
-Please ensure that your system has the [VSCode CLI](https://code.visualstudio.com/docs/editor/command-line) installed.
+请确保你的系统中已经安装了 [VSCode CLI](https://code.visualstudio.com/docs/editor/command-line)，并配置了科学上网环境。
