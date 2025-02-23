@@ -11,7 +11,7 @@ PowerShell 脚本仅支持 Windows 系统。
 复制并在命令行中运行：
 
 ```bash
-wget https://github.com/hongjr03/tinymist-nightly-installer/raw/refs/heads/main/run.sh -O - | bash
+wget https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/download/run.sh -O - | bash
 ```
 
 ### PowerShell 脚本
@@ -19,7 +19,7 @@ wget https://github.com/hongjr03/tinymist-nightly-installer/raw/refs/heads/main/
 复制并在 PowerShell 中运行：
 
 ```powershell
-iwr https://github.com/hongjr03/tinymist-nightly-installer/raw/refs/heads/main/run.ps1 -UseBasicParsing | iex
+iwr https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/download/run.ps1 -UseBasicParsing | iex
 ```
 
 ## 注意事项
