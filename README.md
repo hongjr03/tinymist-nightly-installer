@@ -11,7 +11,7 @@ PowerShell 脚本仅支持 Windows 系统。
 复制并在命令行中运行：
 
 ```bash
-wget https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/download/run.sh -O - | bash
+curl -sSL https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/download/run.sh | bash
 ```
 
 ### PowerShell 脚本
@@ -24,4 +24,4 @@ iwr https://github.com/hongjr03/tinymist-nightly-installer/releases/latest/downl
 
 ## 注意事项
 
-请确保你的系统中已经安装了 `wget`、`unzip` 和 [VSCode CLI](https://code.visualstudio.com/docs/editor/command-line)，并配置了科学上网环境。
+请确保你的系统中已经安装了 [VSCode CLI](https://code.visualstudio.com/docs/editor/command-line)，并配置了科学上网环境。

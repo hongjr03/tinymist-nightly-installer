@@ -53,7 +53,8 @@ $installProcess = Start-Process code -ArgumentList "--install-extension", $exten
 if ($installProcess.ExitCode -eq 0) {
     Write-Host "VS Code extension installed successfully: $FILENAME"
     Write-Host "Please reload VS Code to activate the extension"
-    Remove-Item -Path $ZIPFILE, $extensionPath -Force -ErrorAction SilentlyContinue
 } else {
     Write-Host "VS Code extension installation failed"
 }
+
+Remove-Item -Path $ZIPFILE, $extensionPath -Force -ErrorAction SilentlyContinue
