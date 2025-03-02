@@ -22,22 +22,23 @@ echo "Your system is $UNAME-$UNAME_M"
 FILENAME="tinymist-$UNAME-$UNAME_M.vsix"
 ZIPFILE="$DOWNLOAD_DIR/$FILENAME.zip"
 NIGHTLY_DOWNLOAD_URL="https://nightly.link/Myriad-Dreamin/tinymist/workflows/release-vscode/main/$FILENAME.zip"
-RELEASE_DOWNLOAD_URL="https://github.com/Myriad-Dreamin/tinymist/releases/latest/download/$FILENAME"
+# RELEASE_DOWNLOAD_URL="https://github.com/Myriad-Dreamin/tinymist/releases/download/$FILENAME"
 NIGHTLY_URL="https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success"
-RELEASE_URL="https://api.github.com/repos/myriad-dreamin/tinymist/releases/latest"
-
+RELEASE_URL="https://api.github.com/repos/myriad-dreamin/tinymist/releases"
+EXTENSION_PACKAGE_JSON_URL="https://raw.githubusercontent.com/Myriad-Dreamin/tinymist/refs/heads/main/editors/vscode/package.json"
 
 if [ "$1" == "--stable" ]; then
-  echo "Checking for latest stable release..."
+  echo "Checking for latest (pre)release..."
   echo ""
-  DOWNLOAD_URL=$RELEASE_DOWNLOAD_URL
   INFO_URL=$RELEASE_URL
-  DISPLAY_TITLE=$(curl -s "$INFO_URL" | jq -r '.tag_name')
-  UPDATED_AT=$(curl -s "$INFO_URL" | jq -r '.published_at')
-  URL=$( curl -s "$INFO_URL" | jq -r '.html_url' )
+  DISPLAY_TITLE=$(curl -s "$INFO_URL" | jq -r '.[0].tag_name')
+  UPDATED_AT=$(curl -s "$INFO_URL" | jq -r '.[0].published_at')
+  URL=$( curl -s "$INFO_URL" | jq -r '.[0].html_url' )
 
   # don't need a zip file for stable releases
   ZIPFILE="$DOWNLOAD_DIR/$FILENAME"
+  RELEASE_DOWNLOAD_URL="https://github.com/Myriad-Dreamin/tinymist/releases/download/$DISPLAY_TITLE/$FILENAME"
+  DOWNLOAD_URL=$RELEASE_DOWNLOAD_URL
 else
   echo "Checking for latest nightly build..."
   echo ""
@@ -46,10 +47,34 @@ else
   DISPLAY_TITLE=$(curl -s "$INFO_URL" | jq -r '.workflow_runs[0].display_title')
   UPDATED_AT=$(curl -s "$INFO_URL" | jq -r '.workflow_runs[0].updated_at')
   URL=$( curl -s "$INFO_URL" | jq -r '.workflow_runs[0].html_url' )
+  VSCODE_REQUIRE=$(curl -s "$EXTENSION_PACKAGE_JSON_URL" | jq -r '.engines.vscode')
+  echo ""
+  echo "VS Code version required: $VSCODE_REQUIRE" # ^1.97.0
+  # check if the extension is compatible with the current version of VS Code
+  VS_CODE_VERSION=$(code --version | head -1)
+  echo "VS Code version installed: $VS_CODE_VERSION"
+  echo ""
+  
+  # Extract minimum required version (remove ^ and any other prefixes)
+  MIN_VERSION=$(echo "$VSCODE_REQUIRE" | sed 's/[\^~>=<]//g')
+  INSTALLED_VERSION="$VS_CODE_VERSION"
+  
+  # Compare versions
+  if ! [ "$(printf '%s\n' "$MIN_VERSION" "$INSTALLED_VERSION" | sort -V | head -n1)" = "$MIN_VERSION" ]; then
+    echo "VS Code version mismatch, please update to at least $MIN_VERSION"
+    exit 1
+  fi
+fi
+
+# UTC to system time, don't use -d because it's not supported on macOS;
+if [ "$(uname)" == "Darwin" ]; then
+  UPDATED_AT=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$UPDATED_AT" "+%Y-%m-%d %H:%M:%S")
+else
+  UPDATED_AT=$(date -d "$UPDATED_AT" "+%Y-%m-%d %H:%M:%S")
 fi
 
 echo "$DISPLAY_TITLE"
-echo "Build Time (UTC): $UPDATED_AT"
+echo "Build Time: $UPDATED_AT"
 echo "For more information, visit: $URL"
 echo ""
 echo "Downloading $FILENAME from $DOWNLOAD_URL"
@@ -66,7 +91,6 @@ if [ "$1" != "--stable" ]; then
     echo "Failed to unzip file: $ZIPFILE"
     exit 1
   fi
-
   echo "File downloaded and unzipped to $DOWNLOAD_DIR/$FILENAME"
 fi
 

@@ -31,13 +31,14 @@ $uname_m = if ($system_info -match "x64") {
     Write-Host "Unsupported system type: $system_info"
     exit 1
 }
-
 $FILENAME = "tinymist-$uname-$uname_m.vsix"
+$RELEASE_URL = "https://api.github.com/repos/myriad-dreamin/tinymist/releases"
+$EXTENSION_PACKAGE_JSON_URL = "https://raw.githubusercontent.com/Myriad-Dreamin/tinymist/refs/heads/main/editors/vscode/package.json"
 
 if ($build -eq "--stable") {
     Write-Host "Checking for latest stable release..."
-    $DOWNLOAD_URL = "https://github.com/Myriad-Dreamin/tinymist/releases/latest/download/$FILENAME"
-    $INFO_URL     = "https://api.github.com/repos/myriad-dreamin/tinymist/releases/latest"
+    Write-Host ""
+    $INFO_URL = $RELEASE_URL
     try {
         $stableJson = Invoke-RestMethod -Uri $INFO_URL -UseBasicParsing
     } catch {
@@ -45,14 +46,17 @@ if ($build -eq "--stable") {
         exit 1
     }
     $DISPLAY_TITLE = $stableJson.tag_name
-    $UPDATED_AT    = $stableJson.published_at
-    $URL           = $stableJson.html_url
+    $UPDATED_AT = $stableJson.published_at
+    $URL = $stableJson.html_url
     # For stable release, no zip file wrapping
     $ZIPFILE = Join-Path $DOWNLOAD_DIR $FILENAME
+    $DOWNLOAD_URL = "https://github.com/Myriad-Dreamin/tinymist/releases/download/$DISPLAY_TITLE/$FILENAME"
+    
 } else {
     Write-Host "Checking for latest nightly build..."
+    Write-Host ""
     $DOWNLOAD_URL = "https://nightly.link/Myriad-Dreamin/tinymist/workflows/release-vscode/main/$FILENAME.zip"
-    $INFO_URL     = "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success"
+    $INFO_URL = "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success"
     try {
         $nightlyJson = Invoke-RestMethod -Uri $INFO_URL -UseBasicParsing
     } catch {
@@ -60,13 +64,55 @@ if ($build -eq "--stable") {
         exit 1
     }
     $DISPLAY_TITLE = $nightlyJson.workflow_runs[0].display_title
-    $UPDATED_AT    = $nightlyJson.workflow_runs[0].updated_at
-    $URL           = $nightlyJson.workflow_runs[0].html_url
-    $ZIPFILE       = Join-Path $DOWNLOAD_DIR "$FILENAME.zip"
+    $UPDATED_AT = $nightlyJson.workflow_runs[0].updated_at
+    $URL = $nightlyJson.workflow_runs[0].html_url
+    $ZIPFILE = Join-Path $DOWNLOAD_DIR "$FILENAME.zip"
+    
+    # Fetch VS Code version requirement from package.json
+    try {
+        $packageJson = Invoke-RestMethod -Uri $EXTENSION_PACKAGE_JSON_URL -UseBasicParsing
+        $VSCODE_REQUIRE = $packageJson.engines.vscode
+    } catch {
+        Write-Host "Failed to fetch VS Code version requirement."
+        exit 1
+    }
+    
+    Write-Host ""
+    Write-Host "VS Code version required: $VSCODE_REQUIRE"
+    
+    # Check if the extension is compatible with the current version of VS Code
+    try {
+        $VS_CODE_VERSION = (& code --version)[0]
+        Write-Host "VS Code version installed: $VS_CODE_VERSION"
+        Write-Host ""
+        
+        # Extract minimum required version (remove ^, ~, >, =, < and any other prefixes)
+        $MIN_VERSION = $VSCODE_REQUIRE -replace '[^\d\.]'
+        $INSTALLED_VERSION = $VS_CODE_VERSION
+        
+        # Compare versions
+        if ([version]$INSTALLED_VERSION -lt [version]$MIN_VERSION) {
+            Write-Host "VS Code version mismatch, please update to at least $MIN_VERSION"
+            exit 1
+        }
+    } catch {
+        Write-Host "Failed to check VS Code version compatibility."
+        Write-Host "Make sure VS Code is installed and accessible in PATH."
+        exit 1
+    }
 }
 
-Write-Host $DISPLAY_TITLE
-Write-Host "Build Time (UTC): $UPDATED_AT"
+# Convert UTC time to local time
+try {
+    $utcDateTime = [datetime]::ParseExact($UPDATED_AT, "yyyy-MM-ddTHH:mm:ssZ", [System.Globalization.CultureInfo]::InvariantCulture)
+    $localDateTime = $utcDateTime.ToLocalTime()
+    $UPDATED_AT = $localDateTime.ToString("yyyy-MM-dd HH:mm:ss")
+} catch {
+    # Keep the original format if conversion fails
+}
+
+Write-Host "$DISPLAY_TITLE"
+Write-Host "Build Time: $UPDATED_AT"
 Write-Host "For more information, visit: $URL"
 Write-Host ""
 Write-Host "Downloading $FILENAME from $DOWNLOAD_URL"
