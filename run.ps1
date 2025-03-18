@@ -490,6 +490,19 @@ function Install-LatestStableArtifact {
         .PARAMETER artifactName
             The name of the artifact to install. Either "extension" or "binary".
     #>
+
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.String]$artifactName
+    )
+    Install-ArtifactFromRunInfo $null $artifactName
+    $ExtensionPath = Get-ExtensionFileFromRelease
+    Install-Extension $ExtensionPath
+    Remove-Item -Path $ExtensionPath -Force -ErrorAction SilentlyContinue
+    $BinaryPath = Get-ExtensionFileFromRelease "tinymist-$uname-$uname_m"
+    Install-Binary $BinaryPath "tinymist.exe"
+    Remove-Item -Path $BinaryPath -Force -ErrorAction SilentlyContinue
+    exit 0
 }
 
 function Install-ArtifactByRunId {
