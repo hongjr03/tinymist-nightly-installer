@@ -201,38 +201,79 @@ function Get-ExtensionFileFromRunInfo {
 }
 
 function Get-ExtensionFileFromRelease {
-    # $RELEASE_URL = "https://api.github.com/repos/myriad-dreamin/tinymist/releases"
-    # if ($build -eq "--stable") {
-    #     Write-Host "Checking for latest stable release..."
-    #     Write-Host ""
-    #     $INFO_URL = $RELEASE_URL
-    #     try {
-    #         $stableJson = Invoke-RestMethod -Uri $INFO_URL -UseBasicParsing
-    #     } catch {
-    #         Write-Host "Failed to fetch stable release info."
-    #         exit 1
-    #     }
-    #     $DISPLAY_TITLE = $stableJson.tag_name
-    #     $UPDATED_AT = $stableJson.published_at
-    #     $URL = $stableJson.html_url
-    #     # For stable release, no zip file wrapping
-    #     $ZIPFILE = Join-Path $DOWNLOAD_DIR $FILENAME
-    #     $DOWNLOAD_URL = "https://github.com/Myriad-Dreamin/tinymist/releases/download/$DISPLAY_TITLE/$FILENAME"
-        
-    # } else {
-    # }
+    <#
+        .SYNOPSIS
+            Gets the VS Code extension from the latest stable release.
+        .DESCRIPTION
+            Downloads the extension file from the GitHub releases page.
+        .PARAMETER fileName
+            Optional. The specific filename to download. Defaults to the platform-specific filename.
+    #>
 
+    param (
+        [Parameter(Mandatory = $false)]
+        [System.String]$fileName = $FILENAME
+    )
+
+    $RELEASE_URL = "https://api.github.com/repos/myriad-dreamin/tinymist/releases/latest"
+    Write-Host "Checking for latest stable release..."
+    Write-Host ""
     
-    # if ($build -ne "--stable") {
-    #     try {
-    #         Expand-Archive -Path $ZIPFILE -DestinationPath $DOWNLOAD_DIR -Force
-    #     }
-    #     catch {
-    #         Write-Host "Failed to unzip file: $ZIPFILE"
-    #         exit 1
-    #     }
-    #     Write-Host "File downloaded and unzipped to $(Join-Path $DOWNLOAD_DIR $FILENAME)"
-    # }
+    try {
+        $releaseInfo = Invoke-RestMethod -Uri $RELEASE_URL -UseBasicParsing
+    }
+    catch {
+        Write-Host "Failed to fetch stable release info."
+        exit 1
+    }
+    
+    $tag = $releaseInfo.tag_name
+    $updated_at = $releaseInfo.published_at
+    $url = $releaseInfo.html_url
+    $download_url = ""
+    
+    # Convert UTC time to local time
+    try {
+        $utcDateTime = [datetime]::ParseExact($updated_at, "yyyy-MM-ddTHH:mm:ssZ", [System.Globalization.CultureInfo]::InvariantCulture)
+        $localDateTime = $utcDateTime.ToLocalTime()
+        $updated_at = $localDateTime.ToString("yyyy-MM-dd HH:mm:ss")
+    }
+    catch {
+        # Keep the original format if conversion fails
+    }
+    
+    # Find asset with matching filename
+    foreach ($asset in $releaseInfo.assets) {
+        if ($asset.name -eq $fileName) {
+            $download_url = $asset.browser_download_url
+            break
+        }
+    }
+    
+    if (-not $download_url) {
+        Write-Host "Could not find $fileName in release assets."
+        exit 1
+    }
+    
+    $filePath = Join-Path $DOWNLOAD_DIR $fileName
+    
+    Write-Host "Title: $tag"
+    Write-Host "Release Date: $updated_at"
+    Write-Host "For more information, visit: $url"
+    Write-Host ""
+    Write-Host "Downloading $fileName from $download_url..."
+    Write-Host ""
+    
+    try {
+        Invoke-WebRequest -Uri $download_url -OutFile $filePath -UseBasicParsing -ErrorAction Stop
+    }
+    catch {
+        Write-Host "File download failed: $download_url"
+        exit 1
+    }
+    
+    Write-Host "Extension file is ready on $filePath"
+    return $filePath
 }
 
 function Test-VscodeRequirement {
