@@ -139,6 +139,9 @@ function Get-ArtifactFromRun {
     Write-Host "Title: $($runInfo.display_title)"
     Write-Host "Build Time: $($runInfo.updated_at)"
     Write-Host "For more information, visit: $($runInfo.url)"
+    if ($null -ne $runInfo.prUrl) {
+        Write-Host "Related PR: $($runInfo.prUrl)"
+    }
     Write-Host ""
     Write-Host "Downloading $fileName from $downloadUrl..."
     Write-Host ""
@@ -479,8 +482,58 @@ function Install-ArtifactByRunId {
     Install-ArtifactFromRunInfo $RunInfo $artifactName
 }
 
+function Install-ArtifactByPrNumber {
+    <#
+        .SYNOPSIS
+            Installs the VS Code extension from a specific pull request.
+        .PARAMETER prNumber
+            The ID of the nightly build run.
+        .PARAMETER artifactName
+            The name of the artifact to install. Either "extension" or "binary".
+    #>
+
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.String]$prNumber,
+        [Parameter(Mandatory = $true)]
+        [System.String]$artifactName
+    )
+    
+    $PrInfoUrl = "https://api.github.com/repos/myriad-dreamin/tinymist/pulls/$prNumber"
+
+    try {
+        $PrJson = Invoke-RestMethod -Uri $PrInfoUrl -UseBasicParsing
+    }
+    catch {
+        Write-Host "Failed to fetch PR info."
+        exit 1
+    }
+
+    $PrHeadSha = $PrJson.head.sha
+
+    $ShaRunsUrl = "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&head_sha=$PrHeadSha&status=success"
+
+    try {
+        $PrRunsJson = Invoke-RestMethod -Uri $ShaRunsUrl -UseBasicParsing
+    }
+    catch {
+        Write-Host "Failed to fetch PR workflow runs info."
+        exit 1
+    }
+
+    if ($PrRunsJson.total_count -eq 0) {
+        Write-Host "No successful workflow runs found for PR $prNumber"
+        exit 1
+    }
+
+    $RunInfo = Get-RunInfo $PrRunsJson.workflow_runs[0]
+    $RunInfo.display_title = "PR #$prNumber $($PrJson.title) - $($RunInfo.display_title)"
+    $RunInfo.prUrl = $PrJson.html_url
+    Install-ArtifactFromRunInfo $RunInfo $artifactName
+}
+
 function Write-Help {
-    Write-Host "Usage: run.ps1 [extension|binary] [--stable|--nightly|--run-id <run_id>]"
+    Write-Host "Usage: run.ps1 [extension|binary] [--stable|--nightly|--run <run_id>|--pr <pr_number>]"
     Write-Host "Defaulting to nightly build without arguments."
     Write-Host ""
     Write-Host " --stable: Install the latest stable release"
@@ -490,30 +543,42 @@ function Write-Help {
     Write-Host ""
     Write-Host "Example: .\run.ps1 --nightly"
     Write-Host ""
-    Write-Host "Example: .\run.ps1 --run-id 13916708000"
+    Write-Host "Example: .\run.ps1 --run 13916708000"
     Write-Host ""
-    Write-Host "Example: .\run.ps1 binary --run-id 13916708000"
+    Write-Host "Example: .\run.ps1 binary --run 13916708000"
+    Write-Host ""
+    Write-Host "Example: .\run.ps1 binary --pr 1500"
 }
 
 # Parse command line arguments
 $ArtifactName = "extension"
 $Build = "--nightly"
 $RunId = $null
+$PrNumber = $null
 
 if ($args.Count -gt 0) {
     $ArtifactName = $args[0]
     if ($args.Count -gt 1) {
         $Build = $args[1]
         if ($args.Count -gt 2) {
-            if ($Build -ne "--run-id") {
-                Write-Help
-                exit 1
+            if ($Build -eq "--run") {
+                $RunId = $args[2]
+    
+                if (-not [System.Int64]::TryParse($RunId, [ref]$null)) {
+                    Write-Host "Invalid run ID: $RunId"
+                    exit 1
+                }
             }
-
-            $RunId = $args[2]
-
-            if (-not [System.Int64]::TryParse($RunId, [ref]$null)) {
-                Write-Host "Invalid run ID: $RunId"
+            elseif ($Build -eq "--pr") {
+                $PrNumber = $args[2]
+    
+                if (-not [System.Int64]::TryParse($PrNumber, [ref]$null)) {
+                    Write-Host "Invalid pr Number: $PrNumber"
+                    exit 1
+                }
+            }
+            else {
+                Write-Help
                 exit 1
             }
         }
@@ -528,6 +593,9 @@ elseif ($Build -eq "--nightly") {
 }
 elseif ($null -ne $RunId) {
     Install-ArtifactByRunId $RunId $ArtifactName
+}
+elseif ($null -ne $PrNumber) {
+    Install-ArtifactByPrNumber $PrNumber $ArtifactName
 }
 else {
     Write-Help
