@@ -54,6 +54,10 @@ jobs:
           tar -xf vscode_cli.tar.gz
           sudo mv code /usr/local/bin/
           code --version
+          if [ $? -ne 0 ]; then
+            echo "VSCode CLI installation failed"
+            exit 1
+          fi
       
       - name: Install VSCode CLI (macOS)
         if: matrix.os == 'macos-latest'
@@ -72,7 +76,11 @@ jobs:
           fi
           
           # Verify installation
-          code --version || echo "VSCode CLI not properly installed, but continuing..."
+          code --version
+          if [ $? -ne 0 ]; then
+            echo "VSCode CLI installation failed"
+            exit 1
+          fi
       
       - name: Make script executable
         run: chmod +x run.sh
@@ -91,25 +99,25 @@ jobs:
         if: matrix.command == 'stable-extension'
         run: |
           echo "Testing stable extension installation..."
-          ./run.sh extension --stable || echo "Exit code: $?"
+          ./run.sh extension --stable
       
       - name: Test stable binary installation
         if: matrix.command == 'stable-binary'
         run: |
           echo "Testing stable binary installation..."
-          ./run.sh binary --stable || echo "Exit code: $?"
+          ./run.sh binary --stable
       
       - name: Test nightly extension installation
         if: matrix.command == 'nightly-extension'
         run: |
           echo "Testing nightly extension installation..."
-          ./run.sh extension --nightly || echo "Exit code: $?"
+          ./run.sh extension --nightly
       
       - name: Test nightly binary installation
         if: matrix.command == 'nightly-binary'
         run: |
           echo "Testing nightly binary installation..."
-          ./run.sh binary --nightly || echo "Exit code: $?"
+          ./run.sh binary --nightly
       
       - name: Test run ID extension installation
         if: matrix.command == 'run-extension'
@@ -118,7 +126,7 @@ jobs:
           # Get the latest run ID
           RUN_ID=$(curl -s "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success" | jq -r '.workflow_runs[0].id')
           echo "Using run ID: $RUN_ID"
-          ./run.sh extension --run $RUN_ID || echo "Exit code: $?"
+          ./run.sh extension --run $RUN_ID
       
       - name: Test run ID binary installation
         if: matrix.command == 'run-binary'
@@ -127,7 +135,7 @@ jobs:
           # Get the latest run ID
           RUN_ID=$(curl -s "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success" | jq -r '.workflow_runs[0].id')
           echo "Using run ID: $RUN_ID"
-          ./run.sh binary --run $RUN_ID || echo "Exit code: $?"
+          ./run.sh binary --run $RUN_ID
       
       - name: Test PR extension installation
         if: matrix.command == 'pr-extension'
@@ -140,7 +148,7 @@ jobs:
             PR_NUMBER="1500" # Use a PR number that likely exists
           fi
           echo "Using PR number: $PR_NUMBER"
-          ./run.sh extension --pr $PR_NUMBER || echo "Exit code: $?"
+          ./run.sh extension --pr $PR_NUMBER
       
       - name: Test PR binary installation
         if: matrix.command == 'pr-binary'
@@ -153,7 +161,7 @@ jobs:
             PR_NUMBER="1500" # Use a PR number that likely exists
           fi
           echo "Using PR number: $PR_NUMBER"
-          ./run.sh binary --pr $PR_NUMBER || echo "Exit code: $?"
+          ./run.sh binary --pr $PR_NUMBER
 
   test-powershell-script:
     name: Test PowerShell Script
@@ -203,10 +211,10 @@ jobs:
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           
           # Verify installation
-          try {
-            code --version 
-          } catch {
-            Write-Host "VSCode CLI not properly installed, but continuing..."
+          code --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "VSCode CLI installation failed"
+            exit 1
           }
 
       - name: Test help command
@@ -223,49 +231,25 @@ jobs:
         if: matrix.command == 'stable-extension'
         run: |
           Write-Host "Testing stable extension installation..."
-          try {
-            & ".\run.ps1" extension --stable
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" extension --stable
       
       - name: Test stable binary installation
         if: matrix.command == 'stable-binary'
         run: |
           Write-Host "Testing stable binary installation..."
-          try {
-            & ".\run.ps1" binary --stable
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" binary --stable
       
       - name: Test nightly extension installation
         if: matrix.command == 'nightly-extension'
         run: |
           Write-Host "Testing nightly extension installation..."
-          try {
-            & ".\run.ps1" extension --nightly
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" extension --nightly
       
       - name: Test nightly binary installation
         if: matrix.command == 'nightly-binary'
         run: |
           Write-Host "Testing nightly binary installation..."
-          try {
-            & ".\run.ps1" binary --nightly
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" binary --nightly
       
       - name: Test run ID extension installation
         if: matrix.command == 'run-extension'
@@ -274,13 +258,7 @@ jobs:
           # Get the latest run ID
           $RUN_ID = (Invoke-RestMethod -Uri "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success").workflow_runs[0].id
           Write-Host "Using run ID: $RUN_ID"
-          try {
-            & ".\run.ps1" extension --run $RUN_ID
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" extension --run $RUN_ID
       
       - name: Test run ID binary installation
         if: matrix.command == 'run-binary'
@@ -289,13 +267,7 @@ jobs:
           # Get the latest run ID
           $RUN_ID = (Invoke-RestMethod -Uri "https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success").workflow_runs[0].id
           Write-Host "Using run ID: $RUN_ID"
-          try {
-            & ".\run.ps1" binary --run $RUN_ID
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" binary --run $RUN_ID
       
       - name: Test PR extension installation
         if: matrix.command == 'pr-extension'
@@ -306,20 +278,14 @@ jobs:
             $PR_NUMBER = (Invoke-RestMethod -Uri "https://api.github.com/repos/myriad-dreamin/tinymist/pulls?per_page=1&state=open")[0].number
           }
           catch {
-            $PR_NUMBER = $null
+            $PR_NUMBER = "1500" # Use a PR number that likely exists
           }
           if (-not $PR_NUMBER) {
             Write-Host "No open PRs found, using a recent PR number"
             $PR_NUMBER = "1500" # Use a PR number that likely exists
           }
           Write-Host "Using PR number: $PR_NUMBER"
-          try {
-            & ".\run.ps1" extension --pr $PR_NUMBER
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          }
+          & ".\run.ps1" extension --pr $PR_NUMBER
       
       - name: Test PR binary installation
         if: matrix.command == 'pr-binary'
@@ -330,17 +296,11 @@ jobs:
             $PR_NUMBER = (Invoke-RestMethod -Uri "https://api.github.com/repos/myriad-dreamin/tinymist/pulls?per_page=1&state=open")[0].number
           }
           catch {
-            $PR_NUMBER = $null
+            $PR_NUMBER = "1500" # Use a PR number that likely exists
           }
           if (-not $PR_NUMBER) {
             Write-Host "No open PRs found, using a recent PR number"
             $PR_NUMBER = "1500" # Use a PR number that likely exists
           }
           Write-Host "Using PR number: $PR_NUMBER"
-          try {
-            & ".\run.ps1" binary --pr $PR_NUMBER
-          } 
-          catch {
-            Write-Host "Exit code: $LASTEXITCODE"
-            Write-Host $_.Exception.Message
-          } 
+          & ".\run.ps1" binary --pr $PR_NUMBER 
