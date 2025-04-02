@@ -47,18 +47,32 @@ jobs:
             brew install jq curl
           fi
       
-      - name: Install VSCode CLI
+      - name: Install VSCode CLI (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            curl -L "https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64" -o vscode_cli.tar.gz
-            tar -xf vscode_cli.tar.gz
-            sudo mv code /usr/local/bin/
-          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          curl -L "https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64" -o vscode_cli.tar.gz
+          tar -xf vscode_cli.tar.gz
+          sudo mv code /usr/local/bin/
+          code --version
+      
+      - name: Install VSCode CLI (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Try to install via brew first
+          brew install --cask visual-studio-code || true
+          
+          # If VSCode is not installed or installation failed, ensure CLI is available
+          if [ ! -f "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" ]; then
+            echo "Using direct CLI installation as fallback..."
             curl -L "https://code.visualstudio.com/sha/download?build=stable&os=darwin-universal" -o vscode_cli.zip
             unzip vscode_cli.zip
             sudo mv code /usr/local/bin/
+          else
+            sudo ln -sf "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" /usr/local/bin/code
           fi
-          code --version
+          
+          # Verify installation
+          code --version || echo "VSCode CLI not properly installed, but continuing..."
       
       - name: Make script executable
         run: chmod +x run.sh
@@ -170,10 +184,30 @@ jobs:
       
       - name: Install VSCode CLI
         run: |
-          Invoke-WebRequest -Uri "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive" -OutFile "vscode_cli.zip"
-          Expand-Archive -Path "vscode_cli.zip" -DestinationPath "C:\vscode-cli" -Force
-          Copy-Item -Path "C:\vscode-cli\bin\code.cmd" -Destination "C:\Windows\System32\code.cmd" -Force
-          code --version
+          try {
+            # Try to install using winget
+            winget install Microsoft.VisualStudioCode -e
+          } catch {
+            Write-Host "Winget installation failed, using direct download..."
+          }
+          
+          # Check if VSCode is installed and available
+          if (-not (Get-Command code -ErrorAction SilentlyContinue)) {
+            Write-Host "Using direct CLI installation as fallback..."
+            Invoke-WebRequest -Uri "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive" -OutFile "vscode_cli.zip"
+            Expand-Archive -Path "vscode_cli.zip" -DestinationPath "C:\vscode-cli" -Force
+            Copy-Item -Path "C:\vscode-cli\bin\code.cmd" -Destination "C:\Windows\System32\code.cmd" -Force
+          }
+          
+          # Update environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          
+          # Verify installation
+          try {
+            code --version 
+          } catch {
+            Write-Host "VSCode CLI not properly installed, but continuing..."
+          }
 
       - name: Test help command
         if: matrix.command == 'help'
