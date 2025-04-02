@@ -601,9 +601,9 @@ install_binary() {
   
   if [ -z "$binary_path" ] || [ ! -f "$binary_path" ]; then
     error "Invalid binary file path - $binary_path"
-    exit 1
-  fi
-  
+  exit 1
+fi
+
   local local_bin_dir="$HOME/.local/bin"
   local local_bin_path="$local_bin_dir/$file_name"
   
@@ -725,14 +725,14 @@ install_extension_from_run_info() {
     
     # Validate JSON format
     if ! jq empty < "$temp_run_info_file" 2>/dev/null; then
-      error "无效的运行信息 JSON"
+      error "Invalid run info JSON"
       rm -f "$temp_run_info_file"
       exit 1
     fi
   fi
 
   # Print debug information
-  log "获取的运行信息:"
+  log "Retrieved run information:"
   jq '.' < "$temp_run_info_file" >&2
   
   # read_repo_package_json now returns temporary file path
@@ -746,7 +746,7 @@ install_extension_from_run_info() {
   
   test_vscode_requirement "$vscode_requirement"
   
-  log "从运行信息获取扩展..."
+  log "Getting extension from run information..."
   
   # Extract required information
   local extension_filename=$(jq -r '.extension_filename // ""' < "$temp_run_info_file")
@@ -758,9 +758,9 @@ install_extension_from_run_info() {
   fi
   
   if [ -z "$extension_filename" ] || [ -z "$extension_download_url" ]; then
-    error "无法从运行信息中获取扩展文件名或下载链接"
-    log "扩展文件名: $extension_filename"
-    log "下载链接: $extension_download_url"
+    error "Could not get extension filename or download URL from run information"
+    log "Extension filename: $extension_filename"
+    log "Download URL: $extension_download_url"
     exit 1
   fi
   
@@ -768,22 +768,22 @@ install_extension_from_run_info() {
   local extension_path=$(get_artifact_from_run "$run_info" "$extension_filename" "$extension_download_url")
   local get_artifact_result=$?
   
-  log "捕获的扩展文件路径: $extension_path（退出状态: $get_artifact_result）"
+  log "Captured extension file path: $extension_path (exit status: $get_artifact_result)"
   
   if [ $get_artifact_result -ne 0 ] || [ -z "$extension_path" ]; then
-    error "无法获取扩展文件，get_artifact_from_run 返回了非零状态码或空路径"
+    error "Could not get extension file, get_artifact_from_run returned non-zero status or empty path"
     exit 1
   fi
   
   # Verify file actually exists
   if [ ! -f "$extension_path" ]; then
-    error "扩展文件不存在: $extension_path"
+    error "Extension file does not exist: $extension_path"
     exit 1
   fi
   
   # Verify file size
   local file_size=$(wc -c < "$extension_path")
-  log "扩展文件大小: ${file_size} 字节"
+  log "Extension file size: ${file_size} bytes"
   
   # Extract temporary directory path where extension file is located
   local temp_dir=$(dirname "$extension_path")
@@ -793,10 +793,10 @@ install_extension_from_run_info() {
   
   # Clean up temporary directory
   if [[ "$temp_dir" == *"/tmp/"* ]] || [[ "$temp_dir" == *"/var/folders/"* ]]; then
-    log "清理临时目录: $temp_dir"
+    log "Cleaning up temporary directory: $temp_dir"
     rm -rf "$temp_dir"
   else
-    warn "文件路径不在临时目录中，跳过自动清理: $temp_dir"
+    warn "File path not in temporary directory, skipping automatic cleanup: $temp_dir"
     rm -f "$extension_path"
   fi
 }
@@ -816,17 +816,17 @@ install_binary_from_run_info() {
     
     # Validate JSON format
     if ! jq empty < "$temp_run_info_file" 2>/dev/null; then
-      error "无效的运行信息 JSON"
+      error "Invalid run info JSON"
       rm -f "$temp_run_info_file"
       exit 1
     fi
   fi
   
   # Print debug information
-  log "获取的运行信息:"
+  log "Retrieved run information:"
   jq '.' < "$temp_run_info_file" >&2
   
-  log "从运行信息获取二进制文件..."
+  log "Getting binary from run information..."
   
   # Extract required information
   local binary_filename=$(jq -r '.binary_filename // ""' < "$temp_run_info_file")
@@ -838,9 +838,9 @@ install_binary_from_run_info() {
   fi
   
   if [ -z "$binary_filename" ] || [ -z "$binary_download_url" ]; then
-    error "无法从运行信息中获取二进制文件名或下载链接"
-    log "二进制文件名: $binary_filename"
-    log "下载链接: $binary_download_url"
+    error "Could not get binary filename or download URL from run information"
+    log "Binary filename: $binary_filename"
+    log "Download URL: $binary_download_url"
     exit 1
   fi
   
@@ -848,22 +848,22 @@ install_binary_from_run_info() {
   local binary_path=$(get_artifact_from_run "$run_info" "$binary_filename" "$binary_download_url")
   local get_artifact_result=$?
   
-  log "捕获的二进制文件路径: $binary_path（退出状态: $get_artifact_result）"
+  log "Captured binary file path: $binary_path (exit status: $get_artifact_result)"
   
   if [ $get_artifact_result -ne 0 ] || [ -z "$binary_path" ]; then
-    error "无法获取二进制文件，get_artifact_from_run 返回了非零状态码或空路径"
+    error "Could not get binary file, get_artifact_from_run returned non-zero status or empty path"
     exit 1
   fi
   
   # Verify file actually exists
   if [ ! -f "$binary_path" ]; then
-    error "二进制文件不存在: $binary_path"
+    error "Binary file does not exist: $binary_path"
     exit 1
   fi
   
   # Verify file size
   local file_size=$(wc -c < "$binary_path")
-  log "二进制文件大小: ${file_size} 字节"
+  log "Binary file size: ${file_size} bytes"
   
   # Extract temporary directory path where binary file is located
   local temp_dir=$(dirname "$binary_path")
@@ -873,10 +873,10 @@ install_binary_from_run_info() {
   
   # Clean up temporary directory
   if [[ "$temp_dir" == *"/tmp/"* ]] || [[ "$temp_dir" == *"/var/folders/"* ]]; then
-    log "清理临时目录: $temp_dir"
+    log "Cleaning up temporary directory: $temp_dir"
     rm -rf "$temp_dir"
   else
-    warn "文件路径不在临时目录中，跳过自动清理: $temp_dir"
+    warn "File path not in temporary directory, skipping automatic cleanup: $temp_dir"
     rm -f "$binary_path"
   fi
 }
@@ -898,28 +898,28 @@ install_artifact_from_run_info() {
     
     # Validate JSON format
     if ! jq empty < "$temp_run_info_file" 2>/dev/null; then
-      error "无效的运行信息 JSON"
+      error "Invalid run info JSON"
       rm -f "$temp_run_info_file"
       exit 1
     fi
   fi
   
   if [ -z "$artifact_name" ]; then
-    error "安装构件需要有效的构件名称"
+    error "Valid artifact name required for installation"
     if [ "$temp_run_info_file" != "$run_info" ]; then
       rm -f "$temp_run_info_file"
     fi
     exit 1
   fi
   
-  log "安装 $artifact_name 从运行信息..."
+  log "Installing $artifact_name from run information..."
   
   if [ "$artifact_name" = "extension" ]; then
     install_extension_from_run_info "$temp_run_info_file"
   elif [ "$artifact_name" = "binary" ]; then
     install_binary_from_run_info "$temp_run_info_file"
   else
-    error "无效的构件名称: $artifact_name (必须是 'extension' 或 'binary')"
+    error "Invalid artifact name: $artifact_name (must be 'extension' or 'binary')"
     if [ "$temp_run_info_file" != "$run_info" ]; then
       rm -f "$temp_run_info_file"
     fi
@@ -937,12 +937,12 @@ install_latest_nightly_artifact() {
   local artifact_name="$1"
   
   if [ -z "$artifact_name" ]; then
-    error "缺少构件名称"
+    error "Missing artifact name"
     exit 1
   fi
   
-  log "安装最新夜间版 $artifact_name..."
-  log "正在检查最新的夜间构建..."
+  log "Installing latest nightly $artifact_name..."
+  log "Checking latest nightly build..."
   
   local run_info=$(get_latest_nightly_run_info)
   install_artifact_from_run_info "$run_info" "$artifact_name"
