@@ -7,6 +7,10 @@
 # Define constants and variables
 UNAME=$(uname | tr '[:upper:]' '[:lower:]')
 UNAME_M=$(uname -m | tr '[:upper:]' '[:lower:]')
+# Convert x86_64 to x64 for compatibility
+if [ "$UNAME_M" = "x86_64" ]; then
+  UNAME_M="x64"
+fi
 FILENAME="tinymist-$UNAME-$UNAME_M.vsix"
 BINARY_FILENAME="tinymist-$UNAME-$UNAME_M"
 NIGHTLY_URL="https://api.github.com/repos/myriad-dreamin/tinymist/actions/workflows/release-vscode.yml/runs?per_page=1&branch=main&event=push&status=success"
